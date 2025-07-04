@@ -1,0 +1,22 @@
+[project]
+name = "momen"
+version = "0.1.0"
+description = "A minimal Python debugger interface using GDB/MI"
+authors = [
+    {name = "miso"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+]
+
+[tool.poetry]
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.12.2"
+pytest = "^8.4.1"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
