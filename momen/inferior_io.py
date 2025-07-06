@@ -1,5 +1,9 @@
 import os
 import select
+import time
+
+
+DEFAULT_TIMEOUT = 10
 
 
 class InferiorIO:
@@ -21,13 +25,13 @@ class InferiorIO:
         self.recvuntil(delim)
         return self.sendline(data)
 
-    def recv(self, size: int = 4096) -> bytes:
+    def recv(self, size: int = 4096, timeout: float = DEFAULT_TIMEOUT) -> bytes:
         if self._buf:
             data = self._buf[:size]
             self._buf = self._buf[size:]
             return data
 
-        rlist, _, _ = select.select([self._fd], [], [], 0.1)
+        rlist, _, _ = select.select([self._fd], [], [], timeout)
         if not rlist:
             return b""
 
@@ -36,11 +40,16 @@ class InferiorIO:
         self._buf = data[size:]
         return data[:size]
 
-    def recvuntil(self, delim: bytes, drop: bool = False) -> bytes:
+    def recvuntil(
+        self, delim: bytes, drop: bool = False, timeout: float = DEFAULT_TIMEOUT
+    ) -> bytes:
         data = b""
-        pos = 0
+        end_time = time.time() + timeout
         while True:
-            data += self.recv()
+            remain = end_time - time.time()
+            if remain < 0:
+                raise TimeoutError("timeout")
+            data += self.recv(timeout=remain)
             if (pos := data.find(delim)) != -1:
                 break
 
@@ -51,14 +60,14 @@ class InferiorIO:
             self._buf = data[pos + len(delim) :]
             return data[: pos + len(delim)]
 
-    def recvline(self) -> bytes:
-        return self.recvuntil(b"\n")
+    def recvline(self, timeout: float = DEFAULT_TIMEOUT) -> bytes:
+        return self.recvuntil(b"\n", timeout=timeout)
 
-    def read(self, size: int) -> bytes:
-        return self.recv(size)
+    def read(self, size: int, timeout: float = DEFAULT_TIMEOUT) -> bytes:
+        return self.recv(size, timeout=timeout)
 
-    def readuntil(self, delim: bytes) -> bytes:
-        return self.recvuntil(delim)
+    def readuntil(self, delim: bytes, timeout: float = DEFAULT_TIMEOUT) -> bytes:
+        return self.recvuntil(delim, timeout=timeout)
 
-    def readline(self) -> bytes:
-        return self.recvline()
+    def readline(self, timeout: float = DEFAULT_TIMEOUT) -> bytes:
+        return self.recvline(timeout=timeout)
